@@ -43,7 +43,7 @@ namespace Azure.Messaging.EventHubs.Tests
         private readonly Lazy<TimeSpan> ActivePerTestExecutionLimit;
 
         /// <summary>The connection string for the active Event Hubs namespace for this test run, lazily created.</summary>
-        private readonly Lazy<EventHubsConnectionStringProperties> ParsedConnectionString;
+        private readonly Lazy<ConnectionStringProperties> ParsedConnectionString;
 
         /// <summary>
         ///   The shared instance of the <see cref="EventHubsTestEnvironment"/> to be used during test runs.
@@ -89,7 +89,7 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         /// <value>The fully qualified namespace, as contained within the associated connection string.</value>
         ///
-        public string FullyQualifiedNamespace => ParsedConnectionString.Value.FullyQualifiedNamespace;
+        public string FullyQualifiedNamespace => ParsedConnectionString.Value.Endpoint.Host;
 
         /// <summary>
         ///   The name of the Event Hub to use during Live tests.
@@ -139,7 +139,7 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         private EventHubsTestEnvironment() : base("eventhub")
         {
-            ParsedConnectionString = new Lazy<EventHubsConnectionStringProperties>(() => EventHubsConnectionStringProperties.Parse(EventHubsConnectionString), LazyThreadSafetyMode.ExecutionAndPublication);
+            ParsedConnectionString = new Lazy<ConnectionStringProperties>(() => ConnectionStringParser.Parse(EventHubsConnectionString), LazyThreadSafetyMode.ExecutionAndPublication);
             ActiveEventHubsNamespace = new Lazy<NamespaceProperties>(EnsureEventHubsNamespace, LazyThreadSafetyMode.ExecutionAndPublication);
 
             ActivePerTestExecutionLimit = new Lazy<TimeSpan>(() =>
@@ -183,7 +183,7 @@ namespace Azure.Messaging.EventHubs.Tests
                                                                      int validDurationMinutes = 30)
         {
             var signature = new SharedAccessSignature(signatureAudience, SharedAccessKeyName, SharedAccessKey, TimeSpan.FromMinutes(validDurationMinutes));
-            return $"Endpoint=sb://{ ParsedConnectionString.Value.FullyQualifiedNamespace };EntityPath={ eventHubName };SharedAccessSignature={ signature.Value }";
+            return $"Endpoint={ ParsedConnectionString.Value.Endpoint };EntityPath={ eventHubName };SharedAccessSignature={ signature.Value }";
         }
 
         /// <summary>
@@ -200,11 +200,11 @@ namespace Azure.Messaging.EventHubs.Tests
 
             if (!string.IsNullOrEmpty(environmentConnectionString))
             {
-                var parsed = EventHubsConnectionStringProperties.Parse(environmentConnectionString);
+                var parsed = ConnectionStringParser.Parse(environmentConnectionString);
 
                 return new NamespaceProperties
                 (
-                    parsed.FullyQualifiedNamespace.Substring(0, parsed.FullyQualifiedNamespace.IndexOf('.')),
+                    parsed.Endpoint.Host.Substring(0, parsed.Endpoint.Host.IndexOf('.')),
                     environmentConnectionString.Replace($";EntityPath={ parsed.EventHubName }", string.Empty),
                     shouldRemoveAtCompletion: false
                 );

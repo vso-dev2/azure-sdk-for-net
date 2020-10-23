@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Azure.Messaging.EventHubs.Producer;
 using NUnit.Framework;
 
-namespace Azure.Messaging.EventHubs.Tests
+namespace Azure.Messaging.EventHubs.Tests.Producer
 {
     /// <summary>
     ///   The suite of live tests for the idempotent publishing feature of the

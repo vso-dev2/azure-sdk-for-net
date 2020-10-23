@@ -29,7 +29,7 @@ namespace Azure.Messaging.EventHubs.Tests
         ///   Provides the invalid test cases for the constructor tests.
         /// </summary>
         ///
-        public static IEnumerable<object[]> ConstructorTokenCredentialInvalidCases()
+        public static IEnumerable<object[]> ConstructorExpandedArgumentInvalidCases()
         {
             var credential = new Mock<EventHubTokenCredential>(Mock.Of<TokenCredential>(), "{namespace}.servicebus.windows.net");
 
@@ -39,22 +39,6 @@ namespace Azure.Messaging.EventHubs.Tests
             yield return new object[] { "FakNamespace", "", credential.Object };
             yield return new object[] { "FakeNamespace", "FakePath", null };
             yield return new object[] { "sb://fakenamspace.com", "FakePath", credential.Object };
-        }
-
-        /// <summary>
-        ///   Provides the invalid test cases for the constructor tests.
-        /// </summary>
-        ///
-        public static IEnumerable<object[]> ConstructorSharedKeyCredentialInvalidCases()
-        {
-            var credential = new EventHubsSharedAccessKeyCredential("keyName", "keyValue");
-
-            yield return new object[] { null, "fakePath", credential };
-            yield return new object[] { "", "fakePath", credential };
-            yield return new object[] { "FakeNamespace", null, credential };
-            yield return new object[] { "FakNamespace", "", credential };
-            yield return new object[] { "FakeNamespace", "FakePath", null };
-            yield return new object[] { "sb://fakenamspace.com", "FakePath", credential };
         }
 
         /// <summary>
@@ -69,7 +53,6 @@ namespace Azure.Messaging.EventHubs.Tests
             yield return new object[] { new ReadableOptionsMock(fakeConnection), "simple connection string" };
             yield return new object[] { new ReadableOptionsMock(fakeConnection), "connection string with null options" };
             yield return new object[] { new ReadableOptionsMock("fullyQualifiedNamespace", "path", credential.Object), "expanded argument" };
-            yield return new object[] { new ReadableOptionsMock("fullyQualifiedNamespace", "path", new EventHubsSharedAccessKeyCredential("key", "value")), "expanded argument" };
         }
 
         /// <summary>
@@ -89,7 +72,6 @@ namespace Azure.Messaging.EventHubs.Tests
 
             yield return new object[] { new ReadableOptionsMock(fakeConnection, options), options, "connection string" };
             yield return new object[] { new ReadableOptionsMock("fullyQualifiedNamespace", "path", credential.Object, options), options, "expanded argument" };
-            yield return new object[] { new ReadableOptionsMock("fullyQualifiedNamespace", "path", new EventHubsSharedAccessKeyCredential("key", "value"), options), options, "expanded argument" };
         }
 
         /// <summary>
@@ -211,24 +193,10 @@ namespace Azure.Messaging.EventHubs.Tests
         /// </summary>
         ///
         [Test]
-        [TestCaseSource(nameof(ConstructorTokenCredentialInvalidCases))]
-        public void ConstructorValidatesExpandedArgumentsForTokenCredential(string fullyQualifiedNamespace,
-                                                                            string eventHubName,
-                                                                            TokenCredential credential)
-        {
-            Assert.That(() => new EventHubConnection(fullyQualifiedNamespace, eventHubName, credential), Throws.InstanceOf<ArgumentException>());
-        }
-
-        /// <summary>
-        ///    Verifies functionality of the <see cref="EventHubConnection" />
-        ///    constructor.
-        /// </summary>
-        ///
-        [Test]
-        [TestCaseSource(nameof(ConstructorSharedKeyCredentialInvalidCases))]
-        public void ConstructorValidatesExpandedArgumentsForSharedKeyCredential(string fullyQualifiedNamespace,
-                                                                                string eventHubName,
-                                                                                EventHubsSharedAccessKeyCredential credential)
+        [TestCaseSource(nameof(ConstructorExpandedArgumentInvalidCases))]
+        public void ConstructorValidatesExpandedArguments(string fullyQualifiedNamespace,
+                                                          string eventHubName,
+                                                          TokenCredential credential)
         {
             Assert.That(() => new EventHubConnection(fullyQualifiedNamespace, eventHubName, credential), Throws.InstanceOf<ArgumentException>());
         }
@@ -240,11 +208,11 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         [Test]
         [TestCaseSource(nameof(ConstructorCreatesDefaultOptionsCases))]
-        public void ConstructorCreatesDefaultOptions(ReadableOptionsMock connection,
+        public void ConstructorCreatesDefaultOptions(ReadableOptionsMock client,
                                                      string constructorDescription)
         {
             var defaultOptions = new EventHubConnectionOptions();
-            EventHubConnectionOptions options = connection.Options;
+            EventHubConnectionOptions options = client.Options;
 
             Assert.That(options, Is.Not.Null, $"The { constructorDescription } constructor should have set default options.");
             Assert.That(options, Is.Not.SameAs(defaultOptions), $"The { constructorDescription } constructor should not have the same options instance.");
@@ -259,11 +227,11 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         [Test]
         [TestCaseSource(nameof(ConstructorClonesOptionsCases))]
-        public void ConstructorClonesOptions(ReadableOptionsMock connection,
+        public void ConstructorClonesOptions(ReadableOptionsMock client,
                                              EventHubConnectionOptions constructorOptions,
                                              string constructorDescription)
         {
-            EventHubConnectionOptions options = connection.Options;
+            EventHubConnectionOptions options = client.Options;
 
             Assert.That(options, Is.Not.Null, $"The { constructorDescription } constructor should have set the options.");
             Assert.That(options, Is.Not.SameAs(constructorOptions), $"The { constructorDescription } constructor should have cloned the options.");
@@ -281,9 +249,9 @@ namespace Azure.Messaging.EventHubs.Tests
         {
             var entityPath = "somePath";
             var fakeConnection = $"Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath={ entityPath }";
-            var connection = new EventHubConnection(fakeConnection);
+            var client = new EventHubConnection(fakeConnection);
 
-            Assert.That(connection.EventHubName, Is.EqualTo(entityPath));
+            Assert.That(client.EventHubName, Is.EqualTo(entityPath));
         }
 
         /// <summary>
@@ -296,9 +264,9 @@ namespace Azure.Messaging.EventHubs.Tests
         {
             var entityPath = "somePath";
             var fakeConnection = $"Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]";
-            var connection = new EventHubConnection(fakeConnection, entityPath);
+            var client = new EventHubConnection(fakeConnection, entityPath);
 
-            Assert.That(connection.EventHubName, Is.EqualTo(entityPath));
+            Assert.That(client.EventHubName, Is.EqualTo(entityPath));
         }
 
         /// <summary>
@@ -307,30 +275,14 @@ namespace Azure.Messaging.EventHubs.Tests
         /// </summary>
         ///
         [Test]
-        public void ConstructorWithTokenCredentialInitializesProperties()
+        public void ConstructorWithExpandedArgumentsInitializesProperties()
         {
             var fullyQualifiedNamespace = "host.windows.servicebus.net";
             var entityPath = "somePath";
             var credential = new Mock<EventHubTokenCredential>(Mock.Of<TokenCredential>(), "{namespace}.servicebus.windows.net");
-            var connection = new EventHubConnection(fullyQualifiedNamespace, entityPath, credential.Object);
+            var client = new EventHubConnection(fullyQualifiedNamespace, entityPath, credential.Object);
 
-            Assert.That(connection.EventHubName, Is.EqualTo(entityPath));
-        }
-
-        /// <summary>
-        ///    Verifies functionality of the <see cref="EventHubConnection" />
-        ///    constructor.
-        /// </summary>
-        ///
-        [Test]
-        public void ConstructorWithSharedKeyCredentialInitializesProperties()
-        {
-            var fullyQualifiedNamespace = "host.windows.servicebus.net";
-            var entityPath = "somePath";
-            var credential = new EventHubsSharedAccessKeyCredential("key", "value");
-            var connection = new EventHubConnection(fullyQualifiedNamespace, entityPath, credential);
-
-            Assert.That(connection.EventHubName, Is.EqualTo(entityPath));
+            Assert.That(client.EventHubName, Is.EqualTo(entityPath));
         }
 
         /// <summary>
@@ -368,8 +320,8 @@ namespace Azure.Messaging.EventHubs.Tests
         [Test]
         public void ContructorWithConnectionStringCreatesTheTransportClient()
         {
-            var connection = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
-            Assert.That(GetTransportClient(connection), Is.Not.Null);
+            var client = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
+            Assert.That(GetTransportClient(client), Is.Not.Null);
         }
 
         /// <summary>
@@ -381,10 +333,10 @@ namespace Azure.Messaging.EventHubs.Tests
         public void ContructorWithConnectionStringUsingSharedAccessSignatureCreatesTheCorrectTransportCredential()
         {
             var sasToken = new SharedAccessSignature("hub", "root", "abc1234").Value;
-            var connection = new InjectableTransportClientMock(Mock.Of<TransportClient>(), $"Endpoint=sb://not-real.servicebus.windows.net/;EntityPath=fake;SharedAccessSignature={ sasToken }");
+            var client = new InjectableTransportClientMock(Mock.Of<TransportClient>(), $"Endpoint=sb://not-real.servicebus.windows.net/;EntityPath=fake;SharedAccessSignature={ sasToken }");
 
-            Assert.That(connection.TransportClientCredential, Is.Not.Null, "The transport client should have been given a credential.");
-            Assert.That(connection.TransportClientCredential.GetToken(default, default).Token, Is.EqualTo(sasToken), "The transport client credential should use the provided SAS token.");
+            Assert.That(client.TransportClientCredential, Is.Not.Null, "The transport client should have been given a credential.");
+            Assert.That(client.TransportClientCredential.GetToken(default, default).Token, Is.EqualTo(sasToken), "The transport client credential should use the provided SAS token.");
         }
 
         /// <summary>
@@ -393,7 +345,7 @@ namespace Azure.Messaging.EventHubs.Tests
         /// </summary>
         ///
         [Test]
-        public void ContructorWithTokenCredentailCreatesTheTransportClient()
+        public void ContructorWithExpandedArgumentsCreatesTheTransportClient()
         {
             var fullyQualifiedNamespace = "my.eventhubs.com";
             var path = "some-hub";
@@ -402,28 +354,9 @@ namespace Azure.Messaging.EventHubs.Tests
             var resource = $"amqps://{ fullyQualifiedNamespace }/{ path }";
             var options = new EventHubConnectionOptions { TransportType = EventHubsTransportType.AmqpTcp };
             var signature = new SharedAccessSignature(resource, keyName, key);
-            var connection = new EventHubConnection(fullyQualifiedNamespace, path, new SharedAccessSignatureCredential(signature), options);
+            var client = new EventHubConnection(fullyQualifiedNamespace, path, new SharedAccessSignatureCredential(signature), options);
 
-            Assert.That(GetTransportClient(connection), Is.Not.Null);
-        }
-
-        /// <summary>
-        ///    Verifies functionality of the <see cref="EventHubConnection" />
-        ///    constructor.
-        /// </summary>
-        ///
-        [Test]
-        public void ContructorWithSharedKeyCredentailCreatesTheTransportClient()
-        {
-            var fullyQualifiedNamespace = "my.eventhubs.com";
-            var path = "some-hub";
-            var keyName = "aWonderfulKey";
-            var key = "ABC4223";
-            var options = new EventHubConnectionOptions { TransportType = EventHubsTransportType.AmqpTcp };
-            var credential = new EventHubsSharedAccessKeyCredential(keyName, key);
-            var connection = new EventHubConnection(fullyQualifiedNamespace, path, credential, options);
-
-            Assert.That(GetTransportClient(connection), Is.Not.Null);
+            Assert.That(GetTransportClient(client), Is.Not.Null);
         }
 
         /// <summary>
@@ -433,11 +366,11 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         [Test]
         [TestCaseSource(nameof(ConstructorCreatesDefaultOptionsCases))]
-        public void TransportClientReceivesDefaultOptions(ReadableOptionsMock connection,
+        public void TransportClientReceivesDefaultOptions(ReadableOptionsMock client,
                                                           string constructorDescription)
         {
             var defaultOptions = new EventHubConnectionOptions();
-            EventHubConnectionOptions options = connection.TransportClientOptions;
+            EventHubConnectionOptions options = client.TransportClientOptions;
 
             Assert.That(options, Is.Not.Null, $"The { constructorDescription } constructor should have set default options.");
             Assert.That(options, Is.Not.SameAs(defaultOptions), $"The { constructorDescription } constructor should not have the same options instance.");
@@ -452,11 +385,11 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         [Test]
         [TestCaseSource(nameof(ConstructorClonesOptionsCases))]
-        public void TransportClientReceivesClonedOptions(ReadableOptionsMock connection,
+        public void TransportClientReceivesClonedOptions(ReadableOptionsMock client,
                                                          EventHubConnectionOptions constructorOptions,
                                                          string constructorDescription)
         {
-            EventHubConnectionOptions options = connection.TransportClientOptions;
+            EventHubConnectionOptions options = client.TransportClientOptions;
 
             Assert.That(options, Is.Not.Null, $"The { constructorDescription } constructor should have set the options.");
             Assert.That(options, Is.Not.SameAs(constructorOptions), $"The { constructorDescription } constructor should have cloned the options.");
@@ -482,9 +415,9 @@ namespace Azure.Messaging.EventHubs.Tests
             var signature = new SharedAccessSignature(resource, keyName, key);
             var credential = new SharedAccessSignatureCredential(signature);
             var eventHubCredential = new EventHubTokenCredential(credential, resource);
-            var connection = new EventHubConnection(fullyQualifiedNamespace, path, credential);
+            var client = new EventHubConnection(fullyQualifiedNamespace, path, credential);
 
-            Assert.That(() => connection.CreateTransportClient(fullyQualifiedNamespace, path, eventHubCredential, options), Throws.Nothing);
+            Assert.That(() => client.CreateTransportClient(fullyQualifiedNamespace, path, eventHubCredential, options), Throws.Nothing);
         }
 
         /// <summary>
@@ -505,9 +438,9 @@ namespace Azure.Messaging.EventHubs.Tests
             var signature = new SharedAccessSignature(resource, keyName, key);
             var credential = new SharedAccessSignatureCredential(signature);
             var eventHubCredential = new EventHubTokenCredential(credential, resource);
-            var connection = new EventHubConnection(fullyQualifiedNamespace, path, credential);
+            var client = new EventHubConnection(fullyQualifiedNamespace, path, credential);
 
-            Assert.That(() => connection.CreateTransportClient(fullyQualifiedNamespace, path, eventHubCredential, options), Throws.InstanceOf<ArgumentException>());
+            Assert.That(() => client.CreateTransportClient(fullyQualifiedNamespace, path, eventHubCredential, options), Throws.InstanceOf<ArgumentException>());
         }
 
         /// <summary>
@@ -520,8 +453,8 @@ namespace Azure.Messaging.EventHubs.Tests
         [TestCase("")]
         public void CreateConsumerRequiresConsumerGroup(string consumerGroup)
         {
-            var connection = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
-            Assert.That(() => connection.CreateTransportConsumer(consumerGroup, "partition1", EventPosition.Earliest, Mock.Of<EventHubsRetryPolicy>()), Throws.InstanceOf<ArgumentException>());
+            var client = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
+            Assert.That(() => client.CreateTransportConsumer(consumerGroup, "partition1", EventPosition.Earliest, Mock.Of<EventHubsRetryPolicy>()), Throws.InstanceOf<ArgumentException>());
         }
 
         /// <summary>
@@ -534,8 +467,8 @@ namespace Azure.Messaging.EventHubs.Tests
         [TestCase("")]
         public void CreateConsumerRequiresPartition(string partition)
         {
-            var connection = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
-            Assert.That(() => connection.CreateTransportConsumer("someGroup", partition, EventPosition.Earliest, Mock.Of<EventHubsRetryPolicy>()), Throws.InstanceOf<ArgumentException>());
+            var client = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
+            Assert.That(() => client.CreateTransportConsumer("someGroup", partition, EventPosition.Earliest, Mock.Of<EventHubsRetryPolicy>()), Throws.InstanceOf<ArgumentException>());
         }
 
         /// <summary>
@@ -546,8 +479,8 @@ namespace Azure.Messaging.EventHubs.Tests
         [Test]
         public void CreateConsumerRequiresRetryPolicy()
         {
-            var connection = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
-            Assert.That(() => connection.CreateTransportConsumer("someGroup", "0", EventPosition.Earliest, null), Throws.InstanceOf<ArgumentException>());
+            var client = new EventHubConnection("Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real]", "fake", new EventHubConnectionOptions());
+            Assert.That(() => client.CreateTransportConsumer("someGroup", "0", EventPosition.Earliest, null), Throws.InstanceOf<ArgumentException>());
         }
 
         /// <summary>
@@ -579,21 +512,21 @@ namespace Azure.Messaging.EventHubs.Tests
             var date = DateTimeOffset.Parse("2015-10-27T12:00:00Z");
             var partitionIds = new[] { "first", "second", "third" };
             var properties = new EventHubProperties("dummy", date, partitionIds);
-            var mockConnection = new Mock<EventHubConnection> { CallBase = true };
+            var mockClient = new Mock<EventHubConnection> { CallBase = true };
 
-            mockConnection
-                .Setup(connection => connection.GetPropertiesAsync(
+            mockClient
+                .Setup(client => client.GetPropertiesAsync(
                     It.IsAny<EventHubsRetryPolicy>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(properties))
                 .Verifiable("GetPropertiesAcync should have been delegated to.");
 
-            var actual = await mockConnection.Object.GetPartitionIdsAsync(Mock.Of<EventHubsRetryPolicy>(), CancellationToken.None);
+            var actual = await mockClient.Object.GetPartitionIdsAsync(Mock.Of<EventHubsRetryPolicy>(), CancellationToken.None);
 
             Assert.That(actual, Is.Not.Null);
             Assert.That(actual, Is.EqualTo(partitionIds));
 
-            mockConnection.VerifyAll();
+            mockClient.VerifyAll();
         }
 
         /// <summary>
@@ -605,9 +538,9 @@ namespace Azure.Messaging.EventHubs.Tests
         public async Task GetPropertiesAsyncInvokesTheTransportClient()
         {
             var transportClient = new ObservableTransportClientMock();
-            var connection = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
+            var client = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
 
-            await connection.GetPropertiesAsync(Mock.Of<EventHubsRetryPolicy>(), CancellationToken.None);
+            await client.GetPropertiesAsync(Mock.Of<EventHubsRetryPolicy>(), CancellationToken.None);
 
             Assert.That(transportClient.WasGetPropertiesCalled, Is.True);
         }
@@ -621,10 +554,10 @@ namespace Azure.Messaging.EventHubs.Tests
         public async Task GetPartitionPropertiesAsyncInvokesTheTransportClient()
         {
             var transportClient = new ObservableTransportClientMock();
-            var connection = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
+            var client = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
             var expectedId = "BB33";
 
-            await connection.GetPartitionPropertiesAsync(expectedId, Mock.Of<EventHubsRetryPolicy>());
+            await client.GetPartitionPropertiesAsync(expectedId, Mock.Of<EventHubsRetryPolicy>());
 
             Assert.That(transportClient.GetPartitionPropertiesCalledForId, Is.EqualTo(expectedId));
         }
@@ -638,13 +571,13 @@ namespace Azure.Messaging.EventHubs.Tests
         public void CreateProducerInvokesTheTransportClient()
         {
             var transportClient = new ObservableTransportClientMock();
-            var connection = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
+            var client = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
             var options = new EventHubProducerClientOptions { EnableIdempotentPartitions = true, RetryOptions = new EventHubsRetryOptions { MaximumRetries = 6, TryTimeout = TimeSpan.FromMinutes(4) } };
             var expectedFeatures = options.CreateFeatureFlags();
             var expectedPartitionOptions = new PartitionPublishingOptions { ProducerGroupId = 123 };
             var expectedRetry = options.RetryOptions.ToRetryPolicy();
 
-            connection.CreateTransportProducer(null, expectedFeatures, expectedPartitionOptions, expectedRetry);
+            client.CreateTransportProducer(null, expectedFeatures, expectedPartitionOptions, expectedRetry);
 
             Assert.That(transportClient.CreateProducerCalledWith, Is.Not.Null, "The producer options should have been set.");
             Assert.That(transportClient.CreateProducerCalledWith.PartitionId, Is.Null, "There should have been no partition specified.");
@@ -664,7 +597,7 @@ namespace Azure.Messaging.EventHubs.Tests
         public void CreateConsumerInvokesTheTransportClient()
         {
             var transportClient = new ObservableTransportClientMock();
-            var connection = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
+            var client = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
             var expectedPosition = EventPosition.FromOffset(65);
             var expectedPartition = "2123";
             var expectedConsumerGroup = EventHubConsumerClient.DefaultConsumerGroupName;
@@ -673,7 +606,7 @@ namespace Azure.Messaging.EventHubs.Tests
             var expectedPrefetch = 99U;
             var expectedOwnerLevel = 123L;
 
-            connection.CreateTransportConsumer(expectedConsumerGroup, expectedPartition, expectedPosition, expectedRetryPolicy, expectedTrackLastEnqueued, expectedOwnerLevel, expectedPrefetch);
+            client.CreateTransportConsumer(expectedConsumerGroup, expectedPartition, expectedPosition, expectedRetryPolicy, expectedTrackLastEnqueued, expectedOwnerLevel, expectedPrefetch);
             (var actualConsumerGroup, var actualPartition, EventPosition actualPosition, var actualRetry, var actualTrackLastEnqueued, var actualOwnerLevel, var actualPrefetch) = transportClient.CreateConsumerCalledWith;
 
             Assert.That(actualPartition, Is.EqualTo(expectedPartition), "The partition should have been passed.");
@@ -694,9 +627,9 @@ namespace Azure.Messaging.EventHubs.Tests
         public async Task CloseAsyncClosesTheTransportClient()
         {
             var transportClient = new ObservableTransportClientMock();
-            var connection = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
+            var client = new InjectableTransportClientMock(transportClient, "Endpoint=sb://not-real.servicebus.windows.net/;SharedAccessKeyName=DummyKey;SharedAccessKey=[not_real];EntityPath=fake");
 
-            await connection.CloseAsync();
+            await client.CloseAsync();
 
             Assert.That(transportClient.WasCloseCalled, Is.True);
         }
@@ -754,7 +687,7 @@ namespace Azure.Messaging.EventHubs.Tests
         ///
         /// <param name="client">The client to retrieve the transport client of.</param>
         ///
-        /// <returns>The transport client contained by the Event Hub connection.</returns>
+        /// <returns>The transport client contained by the Event Hub client.</returns>
         ///
         private TransportClient GetTransportClient(EventHubConnection client) =>
             typeof(EventHubConnection)
@@ -788,13 +721,6 @@ namespace Azure.Messaging.EventHubs.Tests
             {
             }
 
-            public ReadableOptionsMock(string fullyQualifiedNamespace,
-                                       string eventHubName,
-                                       EventHubsSharedAccessKeyCredential credential,
-                                       EventHubConnectionOptions clientOptions = default) : base(fullyQualifiedNamespace, eventHubName, credential, clientOptions)
-            {
-            }
-
             internal override TransportClient CreateTransportClient(string fullyQualifiedNamespace, string eventHubName, EventHubTokenCredential credential, EventHubConnectionOptions options)
             {
                 TransportClientOptions = options;
@@ -819,13 +745,6 @@ namespace Azure.Messaging.EventHubs.Tests
             public ObservableOperationsMock(string fullyQualifiedNamespace,
                                             string eventHubName,
                                             TokenCredential credential,
-                                            EventHubConnectionOptions clientOptions = default) : base(fullyQualifiedNamespace, eventHubName, credential, clientOptions)
-            {
-            }
-
-            public ObservableOperationsMock(string fullyQualifiedNamespace,
-                                            string eventHubName,
-                                            EventHubsSharedAccessKeyCredential credential,
                                             EventHubConnectionOptions clientOptions = default) : base(fullyQualifiedNamespace, eventHubName, credential, clientOptions)
             {
             }
@@ -859,16 +778,6 @@ namespace Azure.Messaging.EventHubs.Tests
                                                  string fullyQualifiedNamespace,
                                                  string eventHubName,
                                                  TokenCredential credential,
-                                                 EventHubConnectionOptions clientOptions = default) : base(fullyQualifiedNamespace, eventHubName, credential, clientOptions)
-            {
-                TransportClient = transportClient;
-                SetTransportClient(transportClient);
-            }
-
-            public InjectableTransportClientMock(TransportClient transportClient,
-                                                 string fullyQualifiedNamespace,
-                                                 string eventHubName,
-                                                 EventHubsSharedAccessKeyCredential credential,
                                                  EventHubConnectionOptions clientOptions = default) : base(fullyQualifiedNamespace, eventHubName, credential, clientOptions)
             {
                 TransportClient = transportClient;
