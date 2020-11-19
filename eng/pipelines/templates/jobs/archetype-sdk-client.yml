@@ -153,6 +153,25 @@ jobs:
           DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
           DOTNET_CLI_TELEMETRY_OPTOUT: 1
           DOTNET_MULTILEVEL_LOOKUP: 0
+      # BEGIN: Temporarily publish TestResults for manual analysis
+      - task: CopyFiles@2
+        inputs:
+          sourceFolder: sdk/${{parameters.ServiceDirectory}}
+          contents: '**\coverage.cobertura.xml'
+          targetFolder: $(Build.ArtifactStagingDirectory)\TestResults
+      - task: PublishBuildArtifacts@1
+        inputs:
+          pathToPublish: $(Build.ArtifactStagingDirectory)\TestResults
+          artifactName: TestResults
+      # END: Temporarily publish TestResults for manual analysis
+      - task: PublishTestResults@2
+        condition: always()
+        displayName: "Publish Results ($(TestTargetFramework))"
+        inputs:
+          testResultsFiles: "**/$(TestTargetFramework)*.trx"
+          testRunTitle: "$(OSName) $(TestTargetFramework)"
+          testResultsFormat: "VSTest"
+          mergeTestResults: true
       - task: Palmmedia.reportgenerator.reportgenerator-build-release-task.reportgenerator@4
         condition: and(succeededOrFailed(), eq(variables['CollectCoverage'], 'true'))
         displayName: Generate Code Coverage Reports
@@ -162,14 +181,6 @@ jobs:
           reporttypes: Cobertura
           filefilters: +$(Build.SourcesDirectory)\sdk\${{parameters.ServiceDirectory}}\**
           verbosity: Verbose
-      - task: PublishTestResults@2
-        condition: always()
-        displayName: "Publish Results ($(TestTargetFramework))"
-        inputs:
-          testResultsFiles: "**/$(TestTargetFramework)*.trx"
-          testRunTitle: "$(OSName) $(TestTargetFramework)"
-          testResultsFormat: "VSTest"
-          mergeTestResults: true
       - task: PublishCodeCoverageResults@1
         condition: and(succeededOrFailed(), eq(variables['CollectCoverage'], 'true'))
         displayName: Publish Code Coverage Reports
