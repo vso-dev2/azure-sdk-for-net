@@ -13,7 +13,7 @@ namespace Azure.Communication.Chat.Tests.samples
 {
     public partial class Sample1_ThreadOperations : SamplesBase<ChatTestEnvironment>
     {
-        // This sample demonstrates the operations that can be performed on a thread: create, get, getThreads, update and delete
+        // This sample demonstrates the operations that can be performed on a thread: create, get, getThreads, update and delete.
         [Test]
         public async Task CreateGetUpdateDeleteThreadAsync()
         {
